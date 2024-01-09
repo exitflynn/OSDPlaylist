@@ -10,6 +10,7 @@ terraform {
 variable "SPOTIFY_API_KEY" {
   type 		= string
   description 	= "The spotify API key, post authentication"
+}
 
 provider "spotify" {
   api_key = var.SPOTIFY_API_KEY
