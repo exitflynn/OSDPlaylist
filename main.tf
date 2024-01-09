@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "spotify" {
-  api_key = var.spotify_api_key
+  api_key = var.SPOTIFY_API_KEY
 }
 
 data "spotify_search_track" "by_artist" {
