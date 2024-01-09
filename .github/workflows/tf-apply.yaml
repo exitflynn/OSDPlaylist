@@ -1,0 +1,21 @@
+name: Update playlist
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    name: Apply terraform
+    env:
+      SPOTIFY_API_KEY: ${{ secrets.SPOTIFY_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: terraform apply
+        uses: dflook/terraform-apply@v1
+        with:
+          auto_approve: true
