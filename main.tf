@@ -12,8 +12,8 @@ provider "spotify" {
 }
 
 data "spotify_search_track" "by_artist" {
-  artist = "Daft Punk"
-  #  album = "Random Access Memories (10th Anniversary Edition)"
+  # artist = "Daft Punk"
+  album = "Random Access Memories (10th Anniversary Edition)"
   #  name  = "Give Life Back to Music"
 }
 
