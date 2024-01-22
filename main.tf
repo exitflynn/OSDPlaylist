@@ -36,6 +36,10 @@ data "spotify_search_track" "Parcels" {
   limit = 8
 }
 
+data "spotify_track" "Zenith" {
+  url = "https://open.spotify.com/track/0qKX14YZHptDWiEN0CgxGz?si=174ddb3f25414e2c"
+}
+
 resource "spotify_playlist" "playlist" {
   name        = "The CodeJam Playlist"
   description = "Wishing you make the nicest, most Randomly Accessible Memories this CodeR̶A̶M̶Jam :)"
@@ -46,5 +50,6 @@ resource "spotify_playlist" "playlist" {
     data.spotify_search_track.LImperatrice.tracks[*].id,
     data.spotify_search_track.Odyssee.tracks[*].id,
     data.spotify_search_track.Parcels.tracks[*].id,
+    data.spotify_track.Zenith.id,
   ])
 }
