@@ -31,6 +31,11 @@ data "spotify_search_track" "Odyssee" {
   album = "Odyssee EP"
 }
 
+data "spotify_search_track" "Parcels" {
+  artist = "Parcels"
+  limit = 8
+}
+
 resource "spotify_playlist" "playlist" {
   name        = "The CodeJam Playlist"
   description = "Wishing you make the nicest, most Randomly Accessible Memories this CodeR̶A̶M̶Jam :)"
@@ -40,5 +45,6 @@ resource "spotify_playlist" "playlist" {
     data.spotify_search_track.RAM.tracks[*].id,
     data.spotify_search_track.LImperatrice.tracks[*].id,
     data.spotify_search_track.Odyssee.tracks[*].id,
+    data.spotify_search_track.Parcels.tracks[*].id,
   ])
 }
