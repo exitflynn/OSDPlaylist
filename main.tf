@@ -16,10 +16,19 @@ provider "spotify" {
   api_key = var.SPOTIFY_API_KEY
 }
 
-data "spotify_search_track" "by_artist" {
+data "spotify_search_track" "RAM" {
   # artist = "Daft Punk"
   album = "Random Access Memories (10th Anniversary Edition)"
-  #  name  = "Give Life Back to Music"
+  limit = 8
+}
+
+data "spotify_search_track" "LImperatrice" {
+  artist = "L'Impératrice"
+  limit = 10
+}
+
+data "spotify_search_track" "Odyssee" {
+  album = "Odyssee EP"
 }
 
 resource "spotify_playlist" "playlist" {
@@ -27,9 +36,9 @@ resource "spotify_playlist" "playlist" {
   description = "Wishing you make the nicest, most Randomly Accessible Memories this CodeR̶A̶M̶Jam :)"
   public      = true
 
-  tracks = [
-    data.spotify_search_track.by_artist.tracks[0].id,
-    data.spotify_search_track.by_artist.tracks[1].id,
-    data.spotify_search_track.by_artist.tracks[2].id,
-  ]
+  tracks = flatten([
+    data.spotify_search_track.RAM.tracks[*].id,
+    data.spotify_search_track.LImperatrice.tracks[*].id,
+    data.spotify_search_track.Odyssee.tracks[*].id,
+  ])
 }
