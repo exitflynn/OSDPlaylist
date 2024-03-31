@@ -1,2 +1,2 @@
 # OSDPlaylist
-SUPER SECRET SUPER MYSTERIOUS BUT HYPERSUPERCOOL
+> *One should be able to fork playlists.*
