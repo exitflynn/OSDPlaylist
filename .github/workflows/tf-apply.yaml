@@ -1,21 +1,227 @@
-name: Update playlist
+# name: Update playlist with Spotify Auth
+# on:
+#   push:
+#     branches:
+#       - main
+# jobs:
+#   spotify-auth-and-apply:
+#     runs-on: ubuntu-latest
+#     name: Apply
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
+#       - name: Setup Go
+#         uses: actions/setup-go@v5
+#         with:
+#           go-version: '1.18.0'
+
+#       - name: Install spotify_auth_proxy
+#         run: go install github.com/conradludgate/terraform-provider-spotify/spotify_auth_proxy@latest
+
+#       - name: Run spotify_auth_proxy and capture Auth URL
+#         env:
+#           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+#           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+#           SPOTIFY_CLIENT_REDIRECT_URI: ${{ secrets.SPOTIFY_CLIENT_REDIRECT_URI }}
+#         run: |
+#           spotify_auth_proxy > proxy_output.log 2>&1 &
+#           PROXY_PID=$!
+#           echo "PROXY_PID=$PROXY_PID" >> $GITHUB_ENV
+
+#           # Wait for the Auth URL and API Key to appear in the log
+#           while ! (grep -q "Auth URL:" proxy_output.log && grep -q "APIKey:" proxy_output.log); do
+#             sleep 1
+#           done
+
+#           auth_url=$(grep "Auth URL:" proxy_output.log | awk '{print $3}')
+#           api_key=$(grep "APIKey:" proxy_output.log | awk '{print $2}')
+#           echo "AUTH_URL=$auth_url" >> $GITHUB_ENV
+#           echo "SPOTIFY_API_KEY=$api_key" >> $GITHUB_ENV
+
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: '18'
+
+#       - name: Install Puppeteer
+#         run: npm install puppeteer
+
+#       - name: Perform Spotify login
+#         env:
+#           SPOTIFY_USERNAME: ${{ secrets.SPOTIFY_USERNAME }}
+#           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
+#         run: |
+#           node - <<EOF
+#           const puppeteer = require('puppeteer');
+
+#           (async () => {
+#             const browser = await puppeteer.launch({ headless: true });
+#             const page = await browser.newPage();
+
+#             try {
+#               await page.goto('${{ env.AUTH_URL }}');
+
+#               // Wait for login form and fill in credentials
+#               await page.waitForSelector('#login-username');
+#               await page.type('#login-username', process.env.SPOTIFY_USERNAME);
+#               await page.type('#login-password', process.env.SPOTIFY_PASSWORD);
+
+#               // Submit the form
+#               await page.click('#login-button');
+
+#               // Wait for redirect and authorization
+#               await page.waitForNavigation({ waitUntil: 'networkidle0' });
+
+#               // Check for successful authorization
+#               const content = await page.content();
+#               if (content.includes('Authorization successful')) {
+#                 console.log('Spotify authorization successful');
+#               } else {
+#                 throw new Error('Authorization not successful');
+#               }
+#             } catch (error) {
+#               console.error('Error during Spotify login:', error);
+#               process.exit(1);
+#             } finally {
+#               await browser.close();
+#             }
+#           })();
+#           EOF
+#       - name: Run Terraform Apply
+#         run: |
+#           terraform init
+#           terraform apply -var="SPOTIFY_API_KEY=${{ env.SPOTIFY_API_KEY }}" -auto-approve
+
+name: Update playlist with Spotify Auth
 on:
   push:
     branches:
       - main
-
 jobs:
-  apply:
+  spotify-auth-and-apply:
     runs-on: ubuntu-latest
-    name: Apply terraform
-    env:
-      TF_VAR_SPOTIFY_API_KEY: ${{ secrets.SPOTIFY_API_KEY }}
+    name: Apply
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: terraform apply
-        uses: dflook/terraform-apply@v1
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          auto_approve: true
+          go-version: '1.18.0'
+
+      - name: Install spotify_auth_proxy
+        run: go install github.com/conradludgate/terraform-provider-spotify/spotify_auth_proxy@latest
+
+      - name: Run spotify_auth_proxy and capture Auth URL
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_CLIENT_REDIRECT_URI: ${{ secrets.SPOTIFY_CLIENT_REDIRECT_URI }}
+        run: |
+          spotify_auth_proxy > proxy_output.log 2>&1 &
+          PROXY_PID=$!
+          echo "PROXY_PID=$PROXY_PID" >> $GITHUB_ENV
+          while ! (grep -q "Auth URL:" proxy_output.log && grep -q "APIKey:" proxy_output.log); do
+            sleep 1
+          done
+          auth_url=$(grep "Auth URL:" proxy_output.log | awk '{print $3}')
+          api_key=$(grep "APIKey:" proxy_output.log | awk '{print $2}')
+          echo "AUTH_URL=$auth_url" >> $GITHUB_ENV
+          echo "SPOTIFY_API_KEY=$api_key" >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Puppeteer
+        run: npm install puppeteer
+
+      - name: Perform Spotify login and authorization
+        env:
+          SPOTIFY_USERNAME: ${{ secrets.SPOTIFY_USERNAME }}
+          SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
+        run: |
+          node - <<EOF
+          const puppeteer = require('puppeteer');
+          
+          function getRandomDelay(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+          }
+
+          function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+
+          async function typeWithRandomDelay(page, selector, text) {
+            for (const char of text) {
+              await page.type(selector, char, { delay: getRandomDelay(50, 150) });
+            }
+          }
+
+          async function waitForSelectorWithTimeout(page, selector, timeout) {
+            try {
+              await page.waitForSelector(selector, { visible: true, timeout: timeout });
+              return true;
+            } catch (error) {
+              if (error.name === 'TimeoutError') {
+                return false;
+              }
+              throw error;
+            }
+          }
+
+          (async () => {
+            const browser = await puppeteer.launch({
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080'],
+              defaultViewport: { width: 1920, height: 1080 }
+            });
+            const page = await browser.newPage();
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+            
+            try {
+              await page.goto('${{ env.AUTH_URL }}', { waitUntil: 'networkidle0' });
+              await page.waitForSelector('#login-username', { visible: true });
+              
+              await typeWithRandomDelay(page, '#login-username', process.env.SPOTIFY_USERNAME);
+              await delay(getRandomDelay(500, 1500));
+              await typeWithRandomDelay(page, '#login-password', process.env.SPOTIFY_PASSWORD);
+              
+              await delay(getRandomDelay(1000, 2000));
+              await page.click('#login-button');
+              
+              // Wait for either the authorization button or successful authorization
+              const authAcceptSelector = '#auth-accept';
+              const authSuccessTimeout = 20000; // 20 seconds
+              
+              const isAuthAcceptPresent = await waitForSelectorWithTimeout(page, authAcceptSelector, authSuccessTimeout);
+              
+              if (isAuthAcceptPresent) {
+                console.log('Permission request detected. Accepting...');
+                await page.click(authAcceptSelector);
+                await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 30000 });
+              }
+              
+              const content = await page.content();
+              if (content.includes('Authorization successful') || content.includes('callback?code=')) {
+                console.log('Spotify authorization successful');
+              } else {
+                throw new Error('Authorization not successful');
+              }
+            } catch (error) {
+              console.error('Error during Spotify login or authorization:', error);
+              process.exit(1);
+            } finally {
+              await browser.close();
+            }
+          })();
+          EOF
+
+      - name: Run Terraform Apply
+        run: |
+          terraform init
+          terraform apply -var="SPOTIFY_API_KEY=${{ env.SPOTIFY_API_KEY }}" -auto-approve
